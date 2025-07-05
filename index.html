@@ -6,6 +6,7 @@
     <title>Generador de Diagramas con IA</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
     <script type="importmap">
         {
@@ -287,7 +288,7 @@
         const loadingContainer = document.getElementById('loadingContainer');
         const diagramContainer = document.getElementById('diagramContainer');
         const codePanel = document.getElementById('codePanel');
-        const mermaidCode = document.getElementById('mermaidCode');
+        const mermaidCodeElement = document.getElementById('mermaidCode');
         const copyCodeBtn = document.getElementById('copyCodeBtn');
         const exportMermaidBtn = document.getElementById('exportMermaidBtn');
         const exportSvgBtn = document.getElementById('exportSvgBtn');
@@ -542,15 +543,22 @@
             currentMermaidCode = mermaidCode;
             
             try {
+                // Sanitize the mermaid code with DOMPurify
+                const sanitizedCode = DOMPurify.sanitize(mermaidCode);
+                
                 diagramContainer.innerHTML = '<div id="mermaid-diagram"></div>';
-                const { svg } = await mermaid.render('mermaid-diagram-rendered', mermaidCode);
+                const { svg } = await mermaid.render('mermaid-diagram-rendered', sanitizedCode);
+                
+                // Sanitize the generated SVG
+                const sanitizedSvg = DOMPurify.sanitize(svg);
                 
                 const mermaidDiv = document.getElementById('mermaid-diagram');
-                mermaidDiv.innerHTML = svg;
+                mermaidDiv.innerHTML = sanitizedSvg;
                 
                 // Show code panel
                 codePanel.classList.remove('hidden');
-                mermaidCode.querySelector('code').textContent = currentMermaidCode;
+                const codeElement = mermaidCodeElement.querySelector('code');
+                codeElement.textContent = currentMermaidCode;
                 exportMermaidBtn.classList.remove('hidden');
                 exportSvgBtn.classList.remove('hidden');
                 
@@ -559,7 +567,7 @@
                 diagramContainer.innerHTML = `
                     <div class="text-center text-red-600 dark:text-red-400">
                         <p>Error al renderizar el diagrama</p>
-                        <p class="text-sm mt-2">${error.message}</p>
+                        <p class="text-sm mt-2">${DOMPurify.sanitize(error.message)}</p>
                     </div>
                 `;
             }
@@ -602,9 +610,13 @@ Basándote en el diagrama anterior, modifica el código Mermaid según esta inst
         function addChatMessage(sender, message) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `p-3 rounded-lg ${sender === 'Usuario' ? 'bg-blue-100 dark:bg-blue-900 ml-4' : 'bg-gray-100 dark:bg-gray-600 mr-4'}`;
+            
+            // Sanitize the message content
+            const sanitizedMessage = DOMPurify.sanitize(message);
+            
             messageDiv.innerHTML = `
-                <div class="font-semibold text-sm mb-1">${sender}</div>
-                <div class="text-sm">${message}</div>
+                <div class="font-semibold text-sm mb-1">${DOMPurify.sanitize(sender)}</div>
+                <div class="text-sm">${sanitizedMessage}</div>
             `;
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -658,7 +670,8 @@ Basándote en el diagrama anterior, modifica el código Mermaid según esta inst
         }
 
         function showError(message) {
-            errorMessage.textContent = message;
+            const sanitizedMessage = DOMPurify.sanitize(message);
+            errorMessage.textContent = sanitizedMessage;
             errorContainer.classList.remove('hidden');
             setTimeout(() => {
                 errorContainer.classList.add('hidden');
