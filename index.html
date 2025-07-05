@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Diagramas con IA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "@google/generative-ai": "https://esm.run/@google/generative-ai"
+            }
+        }
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        'primary-dark': '#4C4BBE'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="h-full bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div class="min-h-full">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <h1 class="text-2xl font-bold text-primary">DiagramIA</h1>
+                        </div>
+                        <div class="hidden md:block ml-4">
+                            <div class="text-sm text-gray-600 dark:text-gray-400">
+                                Generador de Diagramas con Inteligencia Artificial
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="manageApiKeyBtn" class="text-sm px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            Gestionar API Key
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- API Key Section -->
+        <div id="apiKeySection" class="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-sm text-yellow-800 dark:text-yellow-200">Necesitas configurar tu API Key de Google Gemini para usar la aplicación</span>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-1">
+                            <input type="password" id="apiKeyInput" placeholder="Ingresa tu API Key de Google Gemini" 
+                                   class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <button id="toggleApiKeyBtn" class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                        <button id="saveApiKeyBtn" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                            Guardar
+                        </button>
+                        <button id="removeApiKeyBtn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors hidden">
+                            Eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Configuration Panel -->
+                <div class="space-y-6">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <h2 class="text-xl font-semibold mb-4">Configuración del Diagrama</h2>
+                        
+                        <div class="space-y-4">
+                            <!-- Título -->
+                            <div>
+                                <label for="diagramTitle" class="block text-sm font-medium mb-2">Título del Diagrama</label>
+                                <input type="text" id="diagramTitle" placeholder="Ej: Sistema de Gestión de Biblioteca" 
+                                       class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+
+                            <!-- Categoría -->
+                            <div>
+                                <label for="diagramCategory" class="block text-sm font-medium mb-2">Categoría</label>
+                                <select id="diagramCategory" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
+                                    <option value="">Selecciona una categoría</option>
+                                    <option value="database">Base de Datos</option>
+                                    <option value="flowchart">Diagrama de Flujo</option>
+                                    <option value="organizational">Organizacional</option>
+                                    <option value="conceptual">Mapa Conceptual</option>
+                                    <option value="network">Diagrama de Red</option>
+                                    <option value="sequence">Diagrama de Secuencia</option>
+                                    <option value="class">Diagrama de Clases</option>
+                                    <option value="mindmap">Mapa Mental</option>
+                                    <option value="gantt">Cronograma (Gantt)</option>
+                                    <option value="other">Otro</option>
+                                </select>
+                            </div>
+
+                            <!-- Tipo de Diagrama (Base de Datos) -->
+                            <div id="databaseOptions" class="hidden">
+                                <label for="databaseType" class="block text-sm font-medium mb-2">Tipo de Diagrama de BD</label>
+                                <select id="databaseType" class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
+                                    <option value="er">Entidad-Relación (ER)</option>
+                                    <option value="relational">Diagrama Relacional</option>
+                                    <option value="logical">Modelo Lógico</option>
+                                    <option value="physical">Modelo Físico</option>
+                                </select>
+                                
+                                <div class="mt-3 flex items-center">
+                                    <input type="checkbox" id="normalizedDb" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
+                                    <label for="normalizedDb" class="ml-2 block text-sm">Aplicar normalización</label>
+                                </div>
+                            </div>
+
+                            <!-- Ámbito/Contexto -->
+                            <div>
+                                <label for="diagramScope" class="block text-sm font-medium mb-2">Ámbito/Contexto</label>
+                                <input type="text" id="diagramScope" placeholder="Ej: Tecnología, Educación, Redes Sociales, Salud" 
+                                       class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
+                            </div>
+
+                            <!-- Descripción/Problema -->
+                            <div>
+                                <label for="diagramDescription" class="block text-sm font-medium mb-2">Descripción o Problema a Resolver</label>
+                                <textarea id="diagramDescription" rows="4" placeholder="Describe el problema, sistema o concepto que quieres representar en el diagrama..." 
+                                          class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 dark:text-white resize-none"></textarea>
+                            </div>
+
+                            <!-- Generar Diagrama -->
+                            <button id="generateButton" disabled class="w-full px-4 py-3 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-medium">
+                                Generar Diagrama
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Chat Interactivo -->
+                    <div id="chatSection" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hidden">
+                        <h3 class="text-lg font-semibold mb-4">Chat de Mejoras</h3>
+                        
+                        <div id="chatMessages" class="h-64 overflow-y-auto mb-4 space-y-3 border border-gray-200 dark:border-gray-600 rounded-md p-3 bg-gray-50 dark:bg-gray-700">
+                            <!-- Messages will appear here -->
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <input type="text" id="chatInput" placeholder="Describe qué quieres mejorar o cambiar..." 
+                                   class="flex-1 px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 dark:text-white">
+                            <button id="sendChatButton" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                                Enviar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diagram Preview -->
+                <div class="space-y-6">
+                    <!-- Preview Panel -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-semibold">Vista Previa del Diagrama</h2>
+                            <div class="flex space-x-2">
+                                <button id="exportMermaidBtn" class="px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors hidden">
+                                    Copiar Código
+                                </button>
+                                <button id="exportSvgBtn" class="px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors hidden">
+                                    Descargar SVG
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="loadingContainer" class="hidden">
+                            <div class="flex items-center justify-center py-12">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                <span class="ml-3 text-gray-600 dark:text-gray-400">Generando diagrama...</span>
+                            </div>
+                        </div>
+                        
+                        <div id="diagramContainer" class="min-h-96 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400">
+                            <div class="text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                </svg>
+                                <p class="mt-2">Tu diagrama aparecerá aquí</p>
+                                <p class="text-sm">Completa la configuración y haz clic en "Generar Diagrama"</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mermaid Code Panel -->
+                    <div id="codePanel" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hidden">
+                        <h3 class="text-lg font-semibold mb-4">Código Mermaid</h3>
+                        <div class="relative">
+                            <pre id="mermaidCode" class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-md p-4 text-sm overflow-x-auto"><code></code></pre>
+                            <button id="copyCodeBtn" class="absolute top-2 right-2 px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+                                Copiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Error Container -->
+        <div id="errorContainer" class="fixed bottom-4 right-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded shadow-lg hidden">
+            <div class="flex items-center">
+                <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+
+        // Dark mode detection
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+
+        // Elements
+        const apiKeySection = document.getElementById('apiKeySection');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const toggleApiKeyBtn = document.getElementById('toggleApiKeyBtn');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const removeApiKeyBtn = document.getElementById('removeApiKeyBtn');
+        const manageApiKeyBtn = document.getElementById('manageApiKeyBtn');
+        
+        const diagramTitle = document.getElementById('diagramTitle');
+        const diagramCategory = document.getElementById('diagramCategory');
+        const databaseOptions = document.getElementById('databaseOptions');
+        const databaseType = document.getElementById('databaseType');
+        const normalizedDb = document.getElementById('normalizedDb');
+        const diagramScope = document.getElementById('diagramScope');
+        const diagramDescription = document.getElementById('diagramDescription');
+        const generateButton = document.getElementById('generateButton');
+        
+        const chatSection = document.getElementById('chatSection');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendChatButton = document.getElementById('sendChatButton');
+        
+        const loadingContainer = document.getElementById('loadingContainer');
+        const diagramContainer = document.getElementById('diagramContainer');
+        const codePanel = document.getElementById('codePanel');
+        const mermaidCode = document.getElementById('mermaidCode');
+        const copyCodeBtn = document.getElementById('copyCodeBtn');
+        const exportMermaidBtn = document.getElementById('exportMermaidBtn');
+        const exportSvgBtn = document.getElementById('exportSvgBtn');
+        
+        const errorContainer = document.getElementById('errorContainer');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // State
+        let geminiModel = null;
+        let currentMermaidCode = '';
+        let conversationHistory = [];
+
+        // Initialize app
+        initializeApp();
+
+        function initializeApp() {
+            const savedApiKey = localStorage.getItem('gemini_api_key');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
+                try {
+                    initializeGemini(savedApiKey);
+                    apiKeySection.classList.add('hidden');
+                    removeApiKeyBtn.classList.remove('hidden');
+                } catch (error) {
+                    showError("Error al inicializar la API de Gemini: " + error.message);
+                    localStorage.removeItem('gemini_api_key');
+                }
+            }
+            
+            updateGenerateButtonState();
+        }
+
+        // Event Listeners
+        manageApiKeyBtn.addEventListener('click', () => {
+            apiKeySection.classList.toggle('hidden');
+        });
+
+        toggleApiKeyBtn.addEventListener('click', () => {
+            if (apiKeyInput.type === 'password') {
+                apiKeyInput.type = 'text';
+                toggleApiKeyBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                `;
+            } else {
+                apiKeyInput.type = 'password';
+                toggleApiKeyBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                `;
+            }
+        });
+
+        saveApiKeyBtn.addEventListener('click', () => {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                showError('Por favor ingresa una clave API válida');
+                return;
+            }
+            
+            try {
+                initializeGemini(apiKey);
+                localStorage.setItem('gemini_api_key', apiKey);
+                apiKeySection.classList.add('hidden');
+                removeApiKeyBtn.classList.remove('hidden');
+                updateGenerateButtonState();
+            } catch (error) {
+                showError("Error al inicializar la API de Gemini: " + error.message);
+            }
+        });
+
+        removeApiKeyBtn.addEventListener('click', () => {
+            localStorage.removeItem('gemini_api_key');
+            apiKeyInput.value = '';
+            geminiModel = null;
+            removeApiKeyBtn.classList.add('hidden');
+            apiKeySection.classList.remove('hidden');
+            updateGenerateButtonState();
+        });
+
+        diagramCategory.addEventListener('change', () => {
+            if (diagramCategory.value === 'database') {
+                databaseOptions.classList.remove('hidden');
+            } else {
+                databaseOptions.classList.add('hidden');
+            }
+            updateGenerateButtonState();
+        });
+
+        [diagramTitle, diagramCategory, diagramScope, diagramDescription].forEach(element => {
+            element.addEventListener('input', updateGenerateButtonState);
+        });
+
+        generateButton.addEventListener('click', generateDiagram);
+        sendChatButton.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+
+        copyCodeBtn.addEventListener('click', copyMermaidCode);
+        exportMermaidBtn.addEventListener('click', copyMermaidCode);
+        exportSvgBtn.addEventListener('click', exportSvg);
+
+        // Functions
+        function initializeGemini(apiKey) {
+            try {
+                const genAI = new GoogleGenerativeAI(apiKey);
+                geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            } catch (error) {
+                console.error("Error inicializando Gemini:", error);
+                throw new Error("Clave API inválida o error de inicialización");
+            }
+        }
+
+        function updateGenerateButtonState() {
+            const hasRequiredFields = diagramTitle.value.trim() && 
+                                    diagramCategory.value && 
+                                    diagramDescription.value.trim() && 
+                                    geminiModel;
+            generateButton.disabled = !hasRequiredFields;
+        }
+
+        async function generateDiagram() {
+            if (!geminiModel) {
+                showError('Por favor configura tu API Key de Gemini');
+                return;
+            }
+
+            const config = {
+                title: diagramTitle.value.trim(),
+                category: diagramCategory.value,
+                databaseType: databaseType.value,
+                normalized: normalizedDb.checked,
+                scope: diagramScope.value.trim(),
+                description: diagramDescription.value.trim()
+            };
+
+            showLoading();
+            
+            try {
+                const prompt = buildPrompt(config);
+                conversationHistory = [{ role: 'user', content: prompt }];
+                
+                const result = await geminiModel.generateContent(prompt);
+                const response = await result.response;
+                const text = await response.text();
+                
+                conversationHistory.push({ role: 'assistant', content: text });
+                
+                const mermaidCode = extractMermaidCode(text);
+                if (mermaidCode) {
+                    await renderDiagram(mermaidCode);
+                    chatSection.classList.remove('hidden');
+                    addChatMessage('IA', 'Diagrama generado exitosamente. ¿Hay algo que te gustaría modificar o mejorar?');
+                } else {
+                    showError('No se pudo extraer el código Mermaid de la respuesta');
+                }
+            } catch (error) {
+                console.error('Error generando diagrama:', error);
+                showError('Error al generar el diagrama: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function buildPrompt(config) {
+            let prompt = `Eres un experto en la creación de diagramas usando la sintaxis Mermaid. Necesito que generes un diagrama con las siguientes especificaciones:
+
+**Título:** ${config.title}
+**Categoría:** ${config.category}
+**Ámbito/Contexto:** ${config.scope || 'General'}
+**Descripción:** ${config.description}
+
+`;
+
+            if (config.category === 'database') {
+                prompt += `**Tipo de Diagrama de BD:** ${config.databaseType}
+**Normalización:** ${config.normalized ? 'Sí, aplicar normalización' : 'No aplicar normalización'}
+
+`;
+            }
+
+            prompt += `Instrucciones específicas:
+1. Genera ÚNICAMENTE el código Mermaid dentro de un bloque de código con \`\`\`mermaid
+2. El diagrama debe ser claro, bien estructurado y fácil de entender
+3. Utiliza la sintaxis correcta de Mermaid para el tipo de diagrama especificado
+4. Incluye etiquetas descriptivas y relaciones apropiadas
+5. El diseño debe ser limpio y profesional
+
+`;
+
+            switch (config.category) {
+                case 'database':
+                    prompt += `Para diagramas de base de datos:
+- Usa 'erDiagram' para diagramas entidad-relación
+- Define entidades con sus atributos
+- Especifica relaciones con cardinalidad apropiada
+- Si es normalizado, asegúrate de eliminar redundancias
+`;
+                    break;
+                case 'flowchart':
+                    prompt += `Para diagramas de flujo:
+- Usa 'flowchart TD' para flujo de arriba hacia abajo
+- Incluye formas apropiadas para diferentes tipos de pasos
+- Conecta los elementos de manera lógica
+`;
+                    break;
+                case 'conceptual':
+                    prompt += `Para mapas conceptuales:
+- Usa 'graph TD' o 'mindmap'
+- Organiza conceptos de manera jerárquica
+- Conecta ideas relacionadas con etiquetas descriptivas
+`;
+                    break;
+                case 'sequence':
+                    prompt += `Para diagramas de secuencia:
+- Usa 'sequenceDiagram'
+- Define participantes claramente
+- Muestra el flujo de mensajes en orden temporal
+`;
+                    break;
+                case 'class':
+                    prompt += `Para diagramas de clases:
+- Usa 'classDiagram'
+- Define clases con atributos y métodos
+- Especifica relaciones de herencia, asociación, etc.
+`;
+                    break;
+                case 'gantt':
+                    prompt += `Para cronogramas Gantt:
+- Usa 'gantt'
+- Define tareas con fechas apropiadas
+- Organiza por secciones si es necesario
+`;
+                    break;
+            }
+
+            prompt += `\nPor favor, genera el código Mermaid ahora:`;
+
+            return prompt;
+        }
+
+        function extractMermaidCode(text) {
+            const mermaidMatch = text.match(/```mermaid\s*([\s\S]*?)\s*```/);
+            return mermaidMatch ? mermaidMatch[1].trim() : null;
+        }
+
+        async function renderDiagram(mermaidCode) {
+            currentMermaidCode = mermaidCode;
+            
+            try {
+                diagramContainer.innerHTML = '<div id="mermaid-diagram"></div>';
+                const { svg } = await mermaid.render('mermaid-diagram-rendered', mermaidCode);
+                
+                const mermaidDiv = document.getElementById('mermaid-diagram');
+                mermaidDiv.innerHTML = svg;
+                
+                // Show code panel
+                codePanel.classList.remove('hidden');
+                mermaidCode.querySelector('code').textContent = currentMermaidCode;
+                exportMermaidBtn.classList.remove('hidden');
+                exportSvgBtn.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error rendering Mermaid:', error);
+                diagramContainer.innerHTML = `
+                    <div class="text-center text-red-600 dark:text-red-400">
+                        <p>Error al renderizar el diagrama</p>
+                        <p class="text-sm mt-2">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function sendChatMessage() {
+            const message = chatInput.value.trim();
+            if (!message || !geminiModel) return;
+
+            addChatMessage('Usuario', message);
+            chatInput.value = '';
+
+            const modifyPrompt = `${message}
+
+Basándote en el diagrama anterior, modifica el código Mermaid según esta instrucción. Devuelve ÚNICAMENTE el código Mermaid actualizado dentro de un bloque \`\`\`mermaid\`\`\`.`;
+
+            conversationHistory.push({ role: 'user', content: modifyPrompt });
+
+            try {
+                const fullConversation = conversationHistory.map(msg => msg.content).join('\n\n');
+                const result = await geminiModel.generateContent(fullConversation);
+                const response = await result.response;
+                const text = await response.text();
+                
+                conversationHistory.push({ role: 'assistant', content: text });
+                
+                const newMermaidCode = extractMermaidCode(text);
+                if (newMermaidCode) {
+                    await renderDiagram(newMermaidCode);
+                    addChatMessage('IA', 'Diagrama actualizado exitosamente.');
+                } else {
+                    addChatMessage('IA', 'Lo siento, no pude generar el código Mermaid actualizado. ¿Podrías ser más específico?');
+                }
+            } catch (error) {
+                console.error('Error en chat:', error);
+                addChatMessage('IA', 'Error al procesar tu solicitud: ' + error.message);
+            }
+        }
+
+        function addChatMessage(sender, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `p-3 rounded-lg ${sender === 'Usuario' ? 'bg-blue-100 dark:bg-blue-900 ml-4' : 'bg-gray-100 dark:bg-gray-600 mr-4'}`;
+            messageDiv.innerHTML = `
+                <div class="font-semibold text-sm mb-1">${sender}</div>
+                <div class="text-sm">${message}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function copyMermaidCode() {
+            navigator.clipboard.writeText(currentMermaidCode)
+                .then(() => {
+                    const originalText = copyCodeBtn.textContent;
+                    copyCodeBtn.textContent = '¡Copiado!';
+                    setTimeout(() => {
+                        copyCodeBtn.textContent = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Error al copiar:', err);
+                    showError('Error al copiar el código');
+                });
+        }
+
+        function exportSvg() {
+            const svgElement = diagramContainer.querySelector('svg');
+            if (!svgElement) {
+                showError('No hay diagrama para exportar');
+                return;
+            }
+
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.href = svgUrl;
+            downloadLink.download = `${diagramTitle.value || 'diagrama'}.svg`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(svgUrl);
+        }
+
+        function showLoading() {
+            loadingContainer.classList.remove('hidden');
+            diagramContainer.classList.add('hidden');
+            generateButton.disabled = true;
+        }
+
+        function hideLoading() {
+            loadingContainer.classList.add('hidden');
+            diagramContainer.classList.remove('hidden');
+            generateButton.disabled = false;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
