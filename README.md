@@ -256,7 +256,7 @@ Si estás interesado en:
 **Brayan Chan Pacheco**
 - 📧 **Email**: chanpachecob@gmail.com
 - 🌍 **Ubicación**: Campeche, México
-- 💼 **Especialidades**: Desarrollo web, IA, Sistemas de diagramación
+- 💼 **Especialidades**: Desarrollo web, IA, Desarrollo Móvil, Bases de Datos, Gestor de proyectos.
 
 ### Soporte Técnico
 
