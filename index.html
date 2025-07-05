@@ -152,6 +152,35 @@
                                           class="w-full px-3 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white dark:bg-gray-700 dark:text-white resize-none"></textarea>
                             </div>
 
+                            <!-- Archivos de Contexto -->
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Archivos de Contexto (Opcional)</label>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-center w-full">
+                                        <label for="fileInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500">
+                                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                                <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                                </svg>
+                                                <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Haz clic para subir</span> o arrastra archivos</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">Imágenes, PDF, Word, Excel (MAX. 10MB)</p>
+                                            </div>
+                                            <input id="fileInput" type="file" class="hidden" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv">
+                                        </label>
+                                    </div>
+                                    
+                                    <!-- Preview de archivos subidos -->
+                                    <div id="filePreview" class="hidden">
+                                        <div class="space-y-2" id="fileList">
+                                            <!-- Los archivos aparecerán aquí -->
+                                        </div>
+                                        <button id="clearFilesBtn" class="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
+                                            Eliminar todos los archivos
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Generar Diagrama -->
                             <button id="generateButton" disabled class="w-full px-4 py-3 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-medium">
                                 Generar Diagrama
@@ -224,6 +253,20 @@
                 </div>
             </div>
         </main>
+
+        <!-- Loading Modal for File Processing -->
+        <div id="fileProcessingModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                <div class="flex items-center justify-center mb-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+                <h3 class="text-lg font-semibold text-center mb-2">Procesando archivos</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 text-center">Analizando el contenido de tus archivos...</p>
+                <div id="fileProcessingProgress" class="mt-4 text-sm text-center text-gray-500">
+                    <!-- Progress info will appear here -->
+                </div>
+            </div>
+        </div>
 
         <!-- Error Container -->
         <div id="errorContainer" class="fixed bottom-4 right-4 bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-200 px-4 py-3 rounded shadow-lg hidden">
